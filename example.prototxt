@@ -1,0 +1,119 @@
+name: "Softmax_prototxt"
+input: "data"
+input_shape {
+  dim: 1
+  dim: 3
+  dim: 224
+  dim: 224
+}
+input: "labels"
+input_shape {
+  dim: 1
+  dim: 1
+  dim: 100
+  dim: 1
+}
+input: "targets"
+input_shape {
+  dim: 1
+  dim: 4
+  dim: 100
+  dim: 1
+}
+input: "pred_weights"
+input_shape {
+  dim: 1
+  dim: 1
+  dim: 100
+  dim: 1
+}
+input: "label_weights"
+input_shape {
+  dim: 1
+  dim: 1
+  dim: 100
+  dim: 1
+}
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "data"
+  top: "conv1"
+  convolution_param {
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    stride: 50
+  }
+}
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  bottom: "conv1"
+  top: "preds"
+  inner_product_param {
+    num_output: 400
+  }
+}
+layer {
+  name: "reshape"
+  type: "Reshape"
+  bottom: "preds"
+  top: "preds_reshape"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 4
+      dim: -1
+      dim: 1
+    }
+  }
+}
+layer {
+  name: "ip2"
+  type: "InnerProduct"
+  bottom: "conv1"
+  top: "probs"
+  inner_product_param {
+    num_output: 200
+  }
+}
+layer {
+  name: "reshape"
+  type: "Reshape"
+  bottom: "probs"
+  top: "probs_reshape"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 2
+      dim: -1
+      dim: 1
+    }
+  }
+}
+layer {
+   name: "LocLoss"
+   type: "WeightedEuclideanLoss"
+   bottom: "preds_reshape"
+   bottom: "targets"
+   bottom: "pred_weights"
+   top: "pred_loss"
+   loss_weight: 10
+}
+layer {
+  name: "label_loss"
+  type: "SoftmaxWithLoss"
+  bottom: "probs_reshape"
+  bottom: "labels"
+  bottom: "label_weights"
+  top: "label_loss"
+  loss_weight: 1
+}
+layer {
+  name: "softmax"
+  type: "Softmax"
+  bottom: "probs_reshape"
+  top: "final_probs"
+  loss_weight: 0
+}
